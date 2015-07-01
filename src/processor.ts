@@ -45,7 +45,10 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     }
 
     function isResourceDefinition(file: SpecificationFile): boolean {
-        return file.content.resourceType == "StructureDefinition" && file.content.type == "resource";
+        if(file.content.resourceType == "StructureDefinition") {
+            return (<fhir.StructureDefinition>file.content).type == "resource";
+        }
+        return false;
     }
 
     function referenceFile(file: SpecificationFile): void {
@@ -54,23 +57,24 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         if(!file.referenced) {
             file.referenced = true;
 
+            if(file.id == "Money") debugger;
             processFile(file);
 
             if(file.type) {
-                // check for duplicate type names.
-                if(typesByName[file.type.name]) {
-                   addError("Duplicate type name '%s'.", file.type.name);
-                }
-                else {
-                    typesByName[file.type.name] = file.type;
-                }
-
                 addTypeToResults(file.type);
             }
         }
     }
 
     function addTypeToResults(type: Type): void {
+
+        // check for duplicate type names.
+        if(typesByName[type.name]) {
+            addError("Duplicate type name '%s'.", type.name);
+        }
+        else {
+            typesByName[type.name] = type;
+        }
 
         result.types.push(type);
     }
@@ -98,21 +102,24 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processValueSet(file: SpecificationFile): void {
 
+        var content = <fhir.ValueSet>file.content;
+
         var type: EnumType = file.type = {
+            category: TypeCategory.ValueSet,
             name: getEnumName(file),
             kind: TypeKind.EnumType,
-            description: file.content.description,
+            description: content.description,
             members: []
         }
 
         // Pull in any codes that are defined in this value set
-        var defined = file.content.define;
+        var defined = content.define;
         if(defined) {
             combine(processCodes(defined));
         }
 
         // See if any codes are pulled in from elsewhere
-        var compose = file.content.compose;
+        var compose = content.compose;
         if(compose) {
             // See if codes are included from another system
             var includes = compose.include;
@@ -205,7 +212,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             && member1.caseSensitive === member2.caseSensitive;
     }
 
-    function processInclude(include: any): EnumMember[] {
+    function processInclude(include: fhir.ValueSetComposeInclude): EnumMember[] {
 
         if(!include.system) {
             addError("Include statement missing system");
@@ -240,7 +247,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return members;
     }
 
-    function processFilter(url: string, filter: any, members: EnumMember[]): void {
+    function processFilter(url: string, filter: fhir.ValueSetComposeIncludeFilter, members: EnumMember[]): void {
 
         var file = getValueSetFile(url);
         if (!file) return;
@@ -305,7 +312,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return file;
     }
 
-    function processCodes(codes: any): EnumMember[] {
+    function processCodes(codes: fhir.ValueSetDefine): EnumMember[] {
 
         var system = codes.system;
         var caseSensitive = codes.caseSensitive;
@@ -314,7 +321,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         processConcepts(codes.concept);
         return members;
 
-        function processConcepts(concepts: any, parent?: EnumMember): void {
+        function processConcepts(concepts: fhir.ValueSetDefineConcept[], parent?: EnumMember): void {
             if(concepts) {
                 for (var j = 0; j < concepts.length; j++) {
                     var concept = concepts[j];
@@ -344,8 +351,10 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function getEnumName(file: SpecificationFile): string {
 
+        var content = <fhir.ValueSet>file.content;
+
         // Get the name from the content
-        var name: string = file.content.name;
+        var name: string = content.name;
 
         // If the name is not defined in the content or is not valid then try using the first referencing symbol
         if(!name || name.indexOf(" ") != -1) {
@@ -387,7 +396,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getEnumMemberName(system: string, concept: any): string {
+    function getEnumMemberName(system: string, concept: fhir.ValueSetDefineConcept): string {
 
         var name: string;
 
@@ -434,6 +443,8 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     function getMappedName(system: string, code: string): string {
 
         switch(code) {
+            case "=":
+                return "Equals";
             case "<":
                 return "LessThan";
             case "<=":
@@ -467,7 +478,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return charCode >= 48 && charCode <= 57;
     }
 
-    function getEnumMemberDescription(concept: any): string {
+    function getEnumMemberDescription(concept: fhir.ValueSetDefineConcept): string {
 
         if(concept.definition ) return concept.definition;
 
@@ -481,7 +492,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getExtensionValueString(element: any, url: string): string {
+    function getExtensionValueString(element: fhir.Element, url: string): string {
 
         var extension = getExtension(element, url);
         if(extension) {
@@ -489,7 +500,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getExtension(element: any, url: string): any {
+    function getExtension(element: fhir.Element, url: string): any {
 
         if(element.extension) {
 
@@ -504,10 +515,11 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processStructureDefinition(file: SpecificationFile): void {
 
-        switch(file.content.type) {
+        switch((<fhir.StructureDefinition>file.content).type) {
             case 'resource':
                 processResource(file);
                 break;
+            case 'constraint':
             case 'type':
                 processType(file);
                 break;
@@ -531,7 +543,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function isPrimitive(file: SpecificationFile): boolean {
 
-        var elements = file.content.differential.element;
+        var elements = (<fhir.StructureDefinition>file.content).differential.element;
         for (var i = 0; i < elements.length; i++) {
             var element = elements[i];
             if(element.short.indexOf("Primitive") != -1) return true;
@@ -541,32 +553,35 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processPrimitive(file: SpecificationFile): void {
 
-
+        var type = file.type = createPrimitiveType(file.content.id);
     }
 
     function processTypeDefinition(file: SpecificationFile): void {
 
-        var type = file.type = createInterfaceType(file.content.id);
+        var content = <fhir.StructureDefinition>file.content;
+        var type = file.type = createInterfaceType(content.id, isResourceDefinition(file) ? TypeCategory.Resource : TypeCategory.DataType);
 
-        var elements = file.content.differential.element;
+        var elements = content.differential.element;
         for(var i = 0; i < elements.length; i++) {
             var element = elements[i];
 
-            if(element.path == type.name) {
+            if(element.path.indexOf(".") == -1) {
                 // element that has resource details
                 type.description = element.short;
-                type.baseType = getElementTypeName(element);
 
-                if(type.baseType) {
-                    // Make sure we know the base type
-                    var baseType = files[type.baseType];
-                    if(!baseType) {
-                        addError("Unknown base type '%s'.", type.baseType);
-                        return;
+                if(type.name != "Element") {
+                    type.baseType = getElementTypeName(element);
+
+                    if (type.baseType) {
+                        // Make sure we know the base type
+                        var baseTypeFile = files[type.baseType];
+                        if (!baseTypeFile) {
+                            addError("Unknown base type '%s'.", type.baseType);
+                            return;
+                        }
+                        referenceFile(baseTypeFile);
                     }
-                }
-                else {
-                    if(type.name != "Element") {
+                    else {
                         type.baseType = "Element";
                     }
                 }
@@ -586,17 +601,37 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 }
 
                 if(propertyName.length > 3 && propertyName.indexOf("[x]") == propertyName.length - 3) {
-
                     var typeReferences = getTypeReferences(element.type);
                     if (!typeReferences) {
                         addError("No types specified for '%s'.", propertyName);
                         return;
                     }
 
-                    typeReferences.forEach((x: TypeReference) => addProperty(combinePropertyNameWithType(propertyName, x.name), x));
+                    var lastProperty: Property,
+                        lastTypeReferenceName: string;
+
+                    for(var j = 0; j < typeReferences.length; j++) {
+                        var typeReference = typeReferences[j];
+
+                        // If the reference has the same type as the last one, combine the type of the property into a
+                        // union type
+                        if(lastTypeReferenceName === typeReference.name) {
+                            if(lastProperty.type.kind == TypeKind.UnionType) {
+                                (<UnionType>lastProperty.type).types.push(typeReference);
+                            }
+                            else {
+                                lastProperty.type = createUnionType([lastProperty.type, typeReference]);
+                            }
+                        }
+                        else {
+                            // otherwise, add a new property for the type
+                            lastProperty = addProperty(combinePropertyNameWithType(propertyName, typeReference.name), typeReference, /*optional*/ true);
+                            lastTypeReferenceName = typeReference.name;
+                        }
+                    }
                 }
                 else {
-                    var propertyType = getPropertyTypeForElement(element);
+                    var propertyType = getPropertyTypeForElement(type, element);
                     if (!propertyType) {
                         addError("Error getting type for property '%s'.", propertyName);
                         return;
@@ -607,13 +642,15 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             }
         }
 
-        function addProperty(name: string, propertyType: Type): void {
-            containingType.properties.push({
+        function addProperty(name: string, propertyType: Type, optional?: boolean): Property {
+            var property: Property = {
                 name: name,
                 description: element.short,
                 type: propertyType,
-                optional: element.min == 0
-            });
+                optional: optional === undefined ? element.min == 0 : optional
+            }
+            containingType.properties.push(property);
+            return property;
         }
     }
 
@@ -629,7 +666,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return element.type[0].code;
     }
 
-    function getPropertyName(element: any): string {
+    function getPropertyName(element: fhir.ElementDefinition): string {
 
         var path = element.path;
         if(path) {
@@ -638,19 +675,31 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getContainingTypeForElement(resourceType: InterfaceType, element: any): ObjectType {
+    function getContainingTypeForElement(resourceType: InterfaceType, element: fhir.ElementDefinition): ObjectType {
 
         var path = element.path;
         if(!path) return null;
 
         var parts = path.split(".");
         var resourceName = parts.shift();
-        if(resourceName != resourceType.name) {
-            addError("Expected '%s' to be '%s'.", resourceName, resourceType.name);
+        if(!hasBaseInterface(resourceType, resourceName)) {
+            addError("Expected '%s' to be a '%s'.", resourceName, resourceType.name);
             return null;
         }
 
         return getContainingTypeForPath(resourceType, parts);
+    }
+
+    function hasBaseInterface(interfaceType: InterfaceType, name: string): boolean {
+
+        var baseType = interfaceType;
+
+        while(baseType) {
+            if(baseType.name == name) return true;
+            baseType = <InterfaceType>getTypeByName(baseType.baseType);
+        }
+
+        return false;
     }
 
     function getContainingTypeForPath(parentType: ObjectType, path: string[]): ObjectType {
@@ -664,17 +713,60 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             return null;
         }
 
-        var currentType = property.type;
-        while(currentType.kind == TypeKind.ArrayType) {
-            currentType = (<ArrayType>currentType).elementType;
+        var currentType = getReferencedType(property.type);
+        if(!currentType) {
+            return null;
         }
-
         if(!(currentType.kind & TypeKind.ObjectTypes)) {
-            addError("Expected '%s' to be an object or array type.", propertyName);
+            addError("Expected property '%s' to reference an object type.", propertyName);
             return null;
         }
 
         return getContainingTypeForPath(<ObjectType>currentType, path);
+    }
+
+    function getReferencedType(currentType: Type, category?: TypeCategory): Type {
+
+        if(currentType) {
+
+            while (currentType.kind == TypeKind.ArrayType) {
+                currentType = (<ArrayType>currentType).elementType;
+            }
+
+            if (currentType.kind == TypeKind.TypeReference) {
+                var referencedName = (<TypeReference>currentType).name;
+
+                currentType = getTypeByName(referencedName);
+                if (!currentType) {
+                    addError("Could not find type with name '%s'.", referencedName);
+                    return null;
+                }
+
+                // restrict to type category if specified
+                if(category && (currentType.category & category) == 0) {
+                    return null;
+                }
+            }
+        }
+
+        return currentType;
+    }
+
+    function getTypeByName(name: string): Type {
+
+        // See if the type has already been created
+        var ret = typesByName[name];
+        if(!ret) {
+            // If not, check if we have a file for it
+            var referencedFile = files[name];
+            if (referencedFile) {
+                // We have the file but not the type so process the file
+                referenceFile(referencedFile);
+                ret = referencedFile.type;
+            }
+        }
+
+        return ret;
     }
 
     function getPropertyForType(objectType: ObjectType, propertyName: string): Property {
@@ -686,20 +778,49 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return null;
     }
 
-    function getPropertyTypeForElement(element: any): Type {
+    function getPropertyTypeForElement(rootType: ObjectType, element: fhir.ElementDefinition): Type {
 
         var elementType: Type;
 
-        var typeReferences = getTypeReferences(element.type);
-        if(!typeReferences || typeReferences.length == 0) {
-            // If no type is specified then create an empty object type
-            elementType = createObjectType();
-        }
-        else if(typeReferences.length == 1) {
-            elementType = typeReferences[0];
+        if(element.nameReference) {
+            elementType = getReferencedType(findTypeOfFirstProperty(rootType, element.nameReference, []));
+            if(!elementType) {
+                addError("Could not resolve name reference '%s'.", element.nameReference);
+                return null;
+            }
+
+            if(elementType.kind != TypeKind.InterfaceType) {
+                addError("Expected name reference to resolve to an interface type.");
+            }
+
+            // create a reference to the interface type
+            elementType = createTypeReference((<InterfaceType>elementType).name);
         }
         else {
-            elementType = createUnionType(typeReferences);
+            var typeReferences = getTypeReferences(element.type);
+            if (!typeReferences || typeReferences.length == 0) {
+                // If no type is specified then create a reference to a sub-type
+                elementType = createSubType(element);
+            }
+            else if (typeReferences.length == 1) {
+                elementType = typeReferences[0];
+            }
+            else {
+                elementType = createUnionType(typeReferences);
+            }
+
+            // check if we have a binding that is not an example binding
+            if (element.binding && !isExampleBinding(element.binding)) {
+                var bindingReference = getBindingReference(element.binding);
+                if (bindingReference) {
+                    if (elementType.kind != TypeKind.TypeReference) {
+                        addError("Expected type reference");
+                    }
+                    else {
+                        (<TypeReference>elementType).binding = bindingReference;
+                    }
+                }
+            }
         }
 
         if(element.max != "1") {
@@ -707,10 +828,48 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
 
         return elementType;
-
     }
 
-    function getTypeReferences(types: any[]): TypeReference[] {
+    function createSubType(element: fhir.ElementDefinition): TypeReference {
+
+        var subTypeName = changeCase.pascalCase(element.path);
+        var subType = createInterfaceType(subTypeName, TypeCategory.SubType);
+
+        subType.description = element.short;
+        subType.baseType = "Element"; // all sub-types derive from Element
+
+        addTypeToResults(subType);
+
+        return createTypeReference(subTypeName);
+    }
+
+    function findTypeOfFirstProperty(type: ObjectType, name: string, checked: Type[]): Type {
+
+        if(type && type.properties) {
+
+            if(checked.indexOf(type) != -1) return null;
+            checked.push(type);
+
+            for (var i = 0; i < type.properties.length; i++) {
+                var property = type.properties[i];
+
+                var propertyType = property.type;
+                if (property.name == name) {
+                    return propertyType;
+                }
+
+                propertyType = getReferencedType(propertyType, TypeCategory.SubType);
+                if (propertyType && (propertyType.kind & TypeKind.ObjectTypes)) {
+                    var match = findTypeOfFirstProperty(<ObjectType>propertyType, name, checked);
+                    if (match) {
+                        return match;
+                    }
+                }
+            }
+        }
+    }
+
+    function getTypeReferences(types: fhir.ElementDefinitionType[]): TypeReference[] {
 
         if (!types) {
             return null;
@@ -739,7 +898,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             if (typeName == '*') {
                 // if we have a wildcard add list of types that represent the open type element to the end of the
                 // array and then skip processing for this item.
-                typeElements.concat(openTypeElement);
+                typeElements = typeElements.concat(openTypeElement);
                 continue;
             }
             else if (typeName == 'xhtml') {
@@ -750,21 +909,39 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 return null;
             }
 
-            var elementType = createTypeReference(typeName);
+            var typeReference = createTypeReference(typeName);
 
-            // check if we have a binding that is not an example binding
-            if (typeElement.binding && !isExampleBinding(typeElement.binding)) {
+            if (typeElement.profile) {
+                var resourceName = getResourceNameFromProfile(typeElement.profile);
+                if(resourceName) {
+                    var resourceFile = files[resourceName];
+                    if(!resourceFile) {
+                        addError("Unknown profile '%s'.", resourceName);
+                    }
+                    else {
+                        referenceFile(resourceFile);
+                    }
 
-                var bindingReference = getBindingReference(typeElement.binding);
-                if (bindingReference) {
-                    elementType.binding = bindingReference;
+                    typeReference.binding = resourceName;
                 }
             }
 
-            result.push(elementType);
+            result.push(typeReference);
         }
 
         return result;
+    }
+
+    function getResourceNameFromProfile(profile: string): string {
+
+        var base = "http://hl7.org/fhir/StructureDefinition/";
+
+        if(profile.indexOf(base) == -1) {
+            addError("Unrecognized profile uri");
+            return null;
+        }
+
+        return profile.substring(base.length);
     }
 
     function getFileForType(name: string): SpecificationFile {
@@ -780,7 +957,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return elementTypeFile;
     }
 
-    function getBindingReference(binding: any): string {
+    function getBindingReference(binding: fhir.ElementDefinitionBinding): string {
 
         var valueSetReference = binding.valueSetReference;
         if (valueSetReference && valueSetReference.reference) {
@@ -803,36 +980,38 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 // queue the binding reference for processing.
                 referenceFile(bindingTypeFile);
 
-                return valueSetReference.reference;
+                return bindingTypeFile.type.name;
             }
         }
     }
 
-    function isExampleBinding(binding: any): boolean {
+    function isExampleBinding(binding: fhir.ElementDefinitionBinding): boolean {
         return binding.strength == "example";
     }
 
     function isApparentExampleValueSet(file: SpecificationFile): boolean {
-        return file.content.copyright == "This is an example set"
+        return (<fhir.ValueSet>file.content).copyright == "This is an example set"
     }
 
     function createArrayType(elementType: Type): ArrayType {
         return {
+            category: TypeCategory.None,
             kind: TypeKind.ArrayType,
             elementType: elementType
         }
     }
 
-    function createTypeReference(name: string, binding?: string): TypeReference {
+    function createTypeReference(name: string): TypeReference {
         return {
+            category: TypeCategory.None,
             name: name,
-            binding: binding,
             kind: TypeKind.TypeReference
         }
     }
 
-    function createInterfaceType(name: string): InterfaceType {
+    function createInterfaceType(name: string, category: TypeCategory): InterfaceType {
         return {
+            category: category,
             kind: TypeKind.InterfaceType,
             name: name,
             properties: []
@@ -841,13 +1020,23 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function createObjectType(): ObjectType {
         return {
+            category: TypeCategory.None,
             kind: TypeKind.ObjectType,
             properties: []
         }
     }
 
+    function createPrimitiveType(name: string): Type {
+        return {
+            category: TypeCategory.Primitive,
+            kind: TypeKind.Primitive,
+            name: name
+        }
+    }
+
     function createUnionType(types: Type[]): UnionType {
         return {
+            category: TypeCategory.None,
             kind: TypeKind.UnionType,
             types: types
         }
@@ -855,7 +1044,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
 }
 
-var openTypeElement: any = [
+var openTypeElement: fhir.ElementDefinitionType[] = [
     {
         code: "integer"
     },

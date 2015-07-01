@@ -72,5 +72,5 @@ module.exports = function(grunt) {
     });
 
     // Default task(s).
-    grunt.registerTask("default", [ "clean:build", "typescript:build", "copy:build", "ts_clean:build" ]);
+    grunt.registerTask("default", [ "clean:build", "typescript:build", "copy:build" ]);
 };

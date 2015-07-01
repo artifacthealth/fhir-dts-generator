@@ -1,3 +1,5 @@
+/// <reference path="./fhir.d.ts" />
+
 interface Callback {
     (err?: Error): void;
 }
@@ -15,7 +17,7 @@ interface SpecificationFile {
     referenced?: boolean;
 
     symbol?: string;
-    content?: any;
+    content?: fhir.DomainResource;
     type?: Type;
 }
 
@@ -27,6 +29,7 @@ interface SpecificationFileMap {
 interface Type {
 
     kind: TypeKind;
+    category: TypeCategory;
     name?: string;
     description?: string;
 }
@@ -63,13 +66,25 @@ interface UnionType extends Type {
 
 declare const enum TypeKind {
 
-    TypeReference,
-    ObjectType,
-    InterfaceType,
-    EnumType,
-    ArrayType,
-    UnionType,
-    ObjectTypes = InterfaceType | ObjectType
+    TypeReference = 1,
+    ObjectType = 2,
+    InterfaceType = 4,
+    EnumType = 8,
+    ArrayType = 16,
+    UnionType = 32,
+    Primitive = 64,
+    ObjectTypes = InterfaceType | ObjectType,
+    RootTypes = Primitive | ObjectTypes | EnumType
+}
+
+declare const enum TypeCategory {
+
+    None = 0,
+    Primitive,
+    DataType,
+    Resource,
+    SubType,
+    ValueSet
 }
 
 interface Property {
@@ -107,4 +122,17 @@ interface ProcessFilesResults {
 interface EmitResults {
 
     errors: string[];
+}
+
+interface Writer {
+
+    writeBeginResource();
+    writeImport(name: string, value: string): void;
+    writeBeginInterface(name: string, extendsList: string[]): void;
+
+}
+
+interface Reference<T> {
+    reference: string;
+    display: string;
 }

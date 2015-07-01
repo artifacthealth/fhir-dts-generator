@@ -4,10 +4,9 @@ import reader = require("./reader");
 import processor = require("./processor");
 import emitter = require("./emitter");
 
-
 var errors: string[];
 
-var readerResult = reader.readSpecification("/Users/meir/Downloads/fhir-spec/");
+var readerResult = reader.readSpecification("/Users/meir/Downloads/fhir-spec-dstu2/");
 errors = readerResult.errors;
 
 if(errors.length == 0) {
