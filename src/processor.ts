@@ -648,9 +648,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                         }
                         referenceFile(baseTypeFile);
                     }
-                    else {
-                        type.baseType = "Element";
-                    }
                 }
             }
             else {

@@ -1117,7 +1117,7 @@ declare module fhir {
     /**
      * Base Resource
      */
-    interface Resource extends Element {
+    interface Resource {
         /**
          * Logical id of this artefact
          */
