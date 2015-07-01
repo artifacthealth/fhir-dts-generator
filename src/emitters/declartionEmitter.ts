@@ -1,15 +1,12 @@
-/// <reference path="../typings/node.d.ts" />
-/// <reference path="./types.d.ts" />
+/// <reference path="../../typings/node.d.ts" />
+/// <reference path="./../types.d.ts" />
 
 import util = require("util");
-import Writer = require("./writer");
+import path = require("path");
 
-// TOOD: Better way to handle declaration output: Do not emit enums, do not emit type arguments, combine types in union that differ only be binding.
+import Writer = require("../writer");
 
-var emitTypeArguments = false;
-var emitValueSets = false;
-
-export function emitFiles(outDir: string, types: Type[]): EmitResults {
+function emitFiles(outDir: string, types: Type[]): EmitResults {
 
     var currentFile: string;
 
@@ -17,7 +14,22 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
         errors: []
     }
 
-    var writer = new Writer("test");
+    var writer = new Writer(path.join(outDir, "fhir.d.ts"));
+
+    // Write the header
+    writer.write("// Type definitions for FHIR DSTU2 v0.5.0");
+    writer.writeLine();
+    writer.write("// Project: http://www.hl7.org/fhir/2015May/index.html");
+    writer.writeLine();
+    writer.write("// Definitions by: Artifact Health <www.artifacthealth.com>");
+    writer.writeLine();
+    writer.write("// Definitions: https://github.com/borisyankov/DefinitelyTyped");
+    writer.writeLine();
+    writer.writeLine();
+    writer.write("declare module fhir {");
+    writer.writeLine();
+    writer.increaseIndent();
+
 
     types.forEach(type => {
 
@@ -33,6 +45,10 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
 
         emitType(type);
     });
+
+    writer.decreaseIndent();
+    writer.write("}");
+    writer.writeLine();
 
     writer.close();
     return result;
@@ -60,9 +76,7 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
                 emitInterfaceType(<InterfaceType>type);
                 break;
             case TypeKind.EnumType:
-                if(emitValueSets) {
-                    emitEnumType(<EnumType>type);
-                }
+                // Do nothing
                 break;
             case TypeKind.ArrayType:
                 emitArrayType(<ArrayType>type);
@@ -175,23 +189,8 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
 
     function emitTypeReference(typeReference: TypeReference): void {
 
-        if(!emitTypeArguments) {
-            writer.write(typeReference.name);
-            return;
-        }
-
-        if(typeReference.name == "code" && typeReference.binding) {
-            writer.write(typeReference.binding);
-            return;
-        }
-
+        // Do not emit binding information
         writer.write(typeReference.name);
-
-        if(typeReference.binding) {
-            writer.write("<");
-            writer.write(typeReference.binding)
-            writer.write(">");
-        }
     }
 
     function emitEnumType(enumType: EnumType): void {
@@ -237,12 +236,8 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
 
     function emitUnionType(unionType: UnionType): void {
 
-        if(emitTypeArguments) {
-            var types = unionType.types;
-        }
-        else {
-            var types = trimUnion(unionType);
-        }
+        // Since type arguments are not emitted, combine union members that are the same type expect for the binding
+        var types = trimUnion(unionType);
 
         // If there is only one type in the union then emit without the union
         if(types.length == 1) {
@@ -281,3 +276,4 @@ export function emitFiles(outDir: string, types: Type[]): EmitResults {
     }
 }
 
+export = emitFiles;

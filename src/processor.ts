@@ -553,7 +553,74 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processPrimitive(file: SpecificationFile): void {
 
-        var type = file.type = createPrimitiveType(file.content.id);
+        var content = <fhir.StructureDefinition>file.content;
+        var description: string,
+            intrinsicType: string;
+
+        var elements = content.differential.element;
+        for(var i = 0; i < elements.length; i++) {
+            var element = elements[i];
+
+            if (element.path == content.id) {
+                // element that has resource details
+                description = element.definition;
+            }
+            else {
+                if(getPropertyName(element) == "value") {
+                    var typeCode = element.type && element.type[0] && element.type[0].code
+                    if(!typeCode) {
+                        addError("Missing primitive type code for '%s'.", content.id);
+                    }
+                    else {
+                        var intrinsicType = getIntrinsicType(typeCode);
+                        if(!intrinsicType) {
+                            addError("Unrecognized primitive type code '%s' for '%s'.", typeCode, content.id);
+                        }
+                        else {
+                            intrinsicType = intrinsicType;
+                        }
+                    }
+                }
+            }
+        }
+
+        if(!intrinsicType) {
+            addError("Missing 'value' property for '%s'.", content.id);
+        }
+        else {
+            var type = file.type = createPrimitiveType(content.id, intrinsicType);
+            type.description = description;
+        }
+    }
+
+    function getIntrinsicType(typeCode: string): string {
+
+        switch (typeCode) {
+            case "xs:string":
+                return "string";
+            case "xs:anyURI":
+                return "string";
+            case "xs:int":
+                return "number";
+            case "xs:decimal":
+                return "number";
+            case "xs:xs:gYear, xs:gYearMonth, xs:date, xs:dateTime":
+                return "string";
+            case "xs:xs:gYear, xs:gYearMonth, xs:date":
+                return "string";
+            case "xs:dateTime":
+                return "string";
+            case "xs:xs:time":
+                return "string";
+            case "xs:boolean":
+                return "boolean";
+            case "xs:base64Binary":
+                return "string";
+            case "xs:integer":
+                return "number";
+            case "xs:uri":
+                return "string";
+        }
     }
 
     function processTypeDefinition(file: SpecificationFile): void {
@@ -642,6 +709,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             }
         }
 
+        // Add resourceType to DomainResource if it's missing
+        if(type.name == "DomainResource" && !getProperty(type, "resourceType")) {
+            type.properties.unshift({
+                name: "resourceType",
+                description: "The type of the resource.",
+                type: createTypeReference("code"),
+                optional: true
+            });
+        }
+
         function addProperty(name: string, propertyType: Type, optional?: boolean): Property {
             var property: Property = {
                 name: name,
@@ -651,6 +728,15 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             }
             containingType.properties.push(property);
             return property;
+        }
+    }
+
+    function getProperty(type: ObjectType, name: string): Property {
+
+        for(var i = 0; i < type.properties.length; i++) {
+            if(type.properties[i].name == name) {
+                return type.properties[i];
+            }
         }
     }
 
@@ -1026,11 +1112,12 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function createPrimitiveType(name: string): Type {
+    function createPrimitiveType(name: string, intrinsicType: string): PrimitiveType {
         return {
             category: TypeCategory.Primitive,
             kind: TypeKind.Primitive,
-            name: name
+            name: name,
+            intrinsicType: intrinsicType
         }
     }
 

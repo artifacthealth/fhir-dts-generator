@@ -1,83 +1,48 @@
 // Type definitions for FHIR DSTU2 v0.5.0
 // Project: http://www.hl7.org/fhir/2015May/index.html
-// Definitions by: Artifact Health, LLC <www.artifacthealth.com>
+// Definitions by: Artifact Health <www.artifacthealth.com>
 // Definitions: https://github.com/borisyankov/DefinitelyTyped
-
 declare module fhir {
     /**
-     * A signed 32-bit integer (for larger values, use decimal)
-     */
-    type integer = number;
-
-    /**
-     * Rational numbers that have a decimal representation. See below about the precision of the number
-     */
-    type decimal = number;
-
-    /**
-     * A Uniform Resource Identifier Reference (RFC 3986). Note: URIs are case sensitive.
-     */
-    type uri = string;
-
-    /**
-     * A stream of bytes, base64 encoded (RFC 4648)
-     */
-    type base64Binary = string;
-
-    /**
-     * An instant in time - known at least to the second and always includes a time zone
-     */
-    type instant = string;
-
-    /**
-     * A date, or partial date (e.g. just year or year + month) as used in human communication. There is no time zone.
-     * Dates SHALL be valid dates
-     */
-    type date = string;
-
-    /**
-     * A date, date-time or partial date (e.g. just year or year + month) as used in human communication. If hours and
-     * minutes are specified, a time zone SHALL be populated. Seconds must be provided due to schema type constraints but
-     * may be zero-filled and may be ignored. Dates SHALL be valid dates. The time "24:00" is not allowed
-     */
-    type dateTime = string;
-
-    /**
-     * A time during the day, with no date specified (can be converted to a Duration since midnight). Seconds must be
-     * provided due to schema type constraints but may be zero-filled and may be ignored. The time "24:00" is not allowed,
-     * and neither is a time zone
-     */
-    type time = string;
-
-    /**
-     * Indicates that the value is taken from a set of controlled strings defined elsewhere (see Using codes for further
-     * discussion). Technically, a code is restricted to string which has at least one character and no leading or trailing
-     * whitespace, and where there is no whitespace other than single spaces in the contents
-     */
-    type code = string;
-
-    /**
-     * An OID represented as a URI (RFC 3001). e.g. urn:oid:1.2.3.4.5
-     */
-    type oid = uri;
-
-    /**
-     * Any combination of upper or lower case ASCII letters ('A'..'Z', and 'a'..'z', numerals ('0'..'9'), '-' and '.', with
-     * a length limit of 64 characters. (This might be an integer, an un-prefixed OID, UUID or any other identifier pattern
-     * that meets these constraints.)
+     * Any combination of lowercase letters, numerals, "-" and ".", with a length limit of 36 characters.  (This might be an integer, an unprefixed OID, UUID or any other identifier pattern that meets these constraints.)  Systems SHALL send ids as lower-case but SHOULD interpret them case-insensitively.
      */
     type id = string;
-
     /**
-     * Any non-negative integer (e.g. >= 0)
+     * String of characters used to identify a name or a resource
      */
-    type unsignedInt = integer;
-
+    type uri = string;
     /**
-     * Any positive integer (e.g. > 0)
+     * A whole number
      */
-    type positiveInt = integer;
-
+    type integer = number;
+    /**
+     * A rational number with implicit precision
+     */
+    type decimal = number;
+    /**
+     * A date, date-time or partial date (e.g. just year or year + month).  If hours and minutes are specified, a time zone SHALL be populated. The format is a union of the schema types gYear, gYearMonth, date and dateTime. Seconds must be provided due to schema type constraints but may be zero-filled and may be ignored.  Dates SHALL be valid dates.
+     */
+    type dateTime = string;
+    /**
+     * A date, or partial date (e.g. just year or year + month). There is no time zone. The format is a union of the schema types gYear, gYearMonth and date.  Dates SHALL be valid dates.
+     */
+    type date = string;
+    /**
+     * An instant in time - known at least to the second
+     */
+    type instant = string;
+    /**
+     * A time during the day, with no date specified
+     */
+    type time = string;
+    /**
+     * A string which has at least one character and no leading or trailing whitespace and where there is no whitespace other than single spaces in the contents
+     */
+    type code = string;
+    /**
+     * A stream of bytes
+     */
+    type base64Binary = string;
     /**
      * A reference to a code defined by a terminology system
      */
@@ -116,6 +81,10 @@ declare module fhir {
          */
         text?: string;
     }
+    /**
+     * An integer with a value that is not negative (e.g. >= 0)
+     */
+    type unsignedInt = number;
     /**
      * Content in a format defined elsewhere
      */
@@ -306,7 +275,7 @@ declare module fhir {
         /**
          * Kind of organization
          */
-            type?: CodeableConcept;
+        type?: CodeableConcept;
         /**
          * A contact detail for the organization
          */
@@ -988,11 +957,11 @@ declare module fhir {
         /**
          * Who signed the signature
          */
-        whoUri: uri;
+        whoUri?: uri;
         /**
          * Who signed the signature
          */
-        whoReference: Reference;
+        whoReference?: Reference;
         /**
          * The actual XML Dig-Sig
          */
@@ -1380,19 +1349,19 @@ declare module fhir {
         /**
          * Value held by characteristic
          */
-        valueCodeableConcept: CodeableConcept;
+        valueCodeableConcept?: CodeableConcept;
         /**
          * Value held by characteristic
          */
-        valueBoolean: boolean;
+        valueBoolean?: boolean;
         /**
          * Value held by characteristic
          */
-        valueQuantity: Quantity;
+        valueQuantity?: Quantity;
         /**
          * Value held by characteristic
          */
-        valueRange: Range;
+        valueRange?: Range;
         /**
          * Group includes or excludes
          */
@@ -1614,7 +1583,7 @@ declare module fhir {
         /**
          * Details about packaged medications
          */
-            package?: MedicationPackage;
+        package?: MedicationPackage;
     }
     /**
      * Group of multiple entities
@@ -2469,7 +2438,7 @@ declare module fhir {
         /**
          * inpatient | outpatient | ambulatory | emergency +
          */
-            class?: code;
+        class?: code;
         /**
          * Specific type of encounter
          */
@@ -2562,6 +2531,10 @@ declare module fhir {
          */
         item?: Reference[];
     }
+    /**
+     * An integer with a value that is positive (e.g. >0)
+     */
+    type positiveInt = number;
     /**
      * A series of measurements taken by a device
      */
@@ -3171,7 +3144,7 @@ declare module fhir {
         /**
          * Import the contents of another value set
          */
-            import?: uri[];
+        import?: uri[];
         /**
          * Include one or more codes from a code system
          */
@@ -3769,7 +3742,7 @@ declare module fhir {
         /**
          * Categorization of document
          */
-            class?: CodeableConcept;
+        class?: CodeableConcept;
         /**
          * Format/content rules for the document
          */
@@ -3923,13 +3896,17 @@ declare module fhir {
         item?: DiagnosticOrderItem[];
     }
     /**
+     * An oid represented as a URI
+     */
+    type oid = string;
+    /**
      * Each study has one or more series of instances
      */
     interface ImagingStudySeries extends Element {
         /**
          * Numeric identifier of this series (0020,0011)
          */
-            number?: unsignedInt;
+        number?: unsignedInt;
         /**
          * The modality of the instances in the series (0008,0060)
          */
@@ -3978,7 +3955,7 @@ declare module fhir {
         /**
          * The number of this instance in the series (0020,0013)
          */
-            number?: unsignedInt;
+        number?: unsignedInt;
         /**
          * Formal identifier for this instance (0008,0018)
          */
@@ -4182,11 +4159,11 @@ declare module fhir {
         /**
          * Physiologically Relevant time/time-period for report
          */
-        diagnosticDateTime: dateTime;
+        diagnosticDateTime?: dateTime;
         /**
          * Physiologically Relevant time/time-period for report
          */
-        diagnosticPeriod: Period;
+        diagnosticPeriod?: Period;
         /**
          * Specimens this report is based on
          */
@@ -4249,15 +4226,15 @@ declare module fhir {
         /**
          * Message part content
          */
-        contentString: string;
+        contentString?: string;
         /**
          * Message part content
          */
-        contentAttachment: Attachment;
+        contentAttachment?: Attachment;
         /**
          * Message part content
          */
-        contentReference: Reference;
+        contentReference?: Reference;
     }
     /**
      * A request for information to be sent to a receiver
@@ -4738,11 +4715,11 @@ declare module fhir {
         /**
          * Target body site
          */
-        siteCodeableConcept: CodeableConcept;
+        siteCodeableConcept?: CodeableConcept;
         /**
          * Target body site
          */
-        siteReference: Reference;
+        siteReference?: Reference;
     }
     /**
      * A request for a procedure to be performed
@@ -5078,11 +5055,11 @@ declare module fhir {
         /**
          * Precise location details
          */
-        siteCodeableConcept: CodeableConcept;
+        siteCodeableConcept?: CodeableConcept;
         /**
          * Precise location details
          */
-        siteReference: Reference;
+        siteReference?: Reference;
     }
     /**
      * The people who performed the procedure
@@ -5418,11 +5395,11 @@ declare module fhir {
         /**
          * Start and end time of administration
          */
-        effectiveTimeDateTime: dateTime;
+        effectiveTimeDateTime?: dateTime;
         /**
          * Start and end time of administration
          */
-        effectiveTimePeriod: Period;
+        effectiveTimePeriod?: Period;
         /**
          * What was administered?
          */
@@ -6731,7 +6708,7 @@ declare module fhir {
         /**
          * Categorization of Composition
          */
-            class?: CodeableConcept;
+        class?: CodeableConcept;
         /**
          * Human Readable name/title
          */
@@ -6780,11 +6757,11 @@ declare module fhir {
         /**
          * Easily comprehended representation of this Contract
          */
-        contentAttachment: Attachment;
+        contentAttachment?: Attachment;
         /**
          * Easily comprehended representation of this Contract
          */
-        contentReference: Reference;
+        contentReference?: Reference;
     }
     /**
      * Contract Legal Language
@@ -6793,11 +6770,11 @@ declare module fhir {
         /**
          * Contract Legal Text
          */
-        contentAttachment: Attachment;
+        contentAttachment?: Attachment;
         /**
          * Contract Legal Text
          */
-        contentReference: Reference;
+        contentReference?: Reference;
     }
     /**
      * Computable Contract Language
@@ -6806,11 +6783,11 @@ declare module fhir {
         /**
          * Computable Contract Rules
          */
-        contentAttachment: Attachment;
+        contentAttachment?: Attachment;
         /**
          * Computable Contract Rules
          */
-        contentReference: Reference;
+        contentReference?: Reference;
     }
     /**
      * Contract
@@ -7164,7 +7141,7 @@ declare module fhir {
         /**
          * Note Number for this note
          */
-            number?: positiveInt;
+        number?: positiveInt;
         /**
          * display | print | printoper
          */
@@ -7641,15 +7618,15 @@ declare module fhir {
         /**
          * Message part content
          */
-        contentString: string;
+        contentString?: string;
         /**
          * Message part content
          */
-        contentAttachment: Attachment;
+        contentAttachment?: Attachment;
         /**
          * Message part content
          */
-        contentReference: Reference;
+        contentReference?: Reference;
     }
     /**
      * A record of information transmitted from a sender to a receiver
@@ -8598,19 +8575,19 @@ declare module fhir {
         /**
          * Identifies the source of the concepts which are being mapped
          */
-        sourceUri: uri;
+        sourceUri?: uri;
         /**
          * Identifies the source of the concepts which are being mapped
          */
-        sourceReference: Reference;
+        sourceReference?: Reference;
         /**
          * Provides context to the mappings
          */
-        targetUri: uri;
+        targetUri?: uri;
         /**
          * Provides context to the mappings
          */
-        targetReference: Reference;
+        targetReference?: Reference;
         /**
          * Mappings for a concept from the source set
          */
@@ -9384,11 +9361,11 @@ declare module fhir {
         /**
          * Contents of this set of documents
          */
-        pAttachment: Attachment;
+        pAttachment?: Attachment;
         /**
          * Contents of this set of documents
          */
-        pReference: Reference;
+        pReference?: Reference;
     }
     /**
      * Related things

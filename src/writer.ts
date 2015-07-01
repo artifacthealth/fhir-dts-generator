@@ -55,9 +55,7 @@ class Writer {
     }
 
     close(): void {
-
-        console.log(this._output);
-        //fs.writeFileSync(this._filename, this._output, 'utf8');
+        fs.writeFileSync(this._filename, this._output, 'utf8');
     }
 }
 

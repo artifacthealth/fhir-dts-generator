@@ -34,6 +34,11 @@ interface Type {
     description?: string;
 }
 
+interface PrimitiveType extends Type {
+
+    intrinsicType: string;
+}
+
 interface ObjectType extends Type {
 
     properties: Property[];

@@ -1,12 +1,20 @@
 /// <reference path="./types.d.ts" />
+/// <reference path="../typings/mkdirp.d.ts" />
 
 import reader = require("./reader");
 import processor = require("./processor");
-import emitter = require("./emitter");
+import emitter = require("./emitters/declartionEmitter");
+import fs = require("fs");
+import mkdirp = require("mkdirp");
 
 var errors: string[];
 
-var readerResult = reader.readSpecification("/Users/meir/Downloads/fhir-spec-dstu2/");
+var specDir = "/Users/meir/Downloads/fhir-spec-dstu2/";
+var outDir = "out";
+
+mkdirp.sync(outDir);
+
+var readerResult = reader.readSpecification(specDir);
 errors = readerResult.errors;
 
 if(errors.length == 0) {
@@ -15,7 +23,7 @@ if(errors.length == 0) {
 }
 
 if(errors.length == 0) {
-    var emitResults = emitter.emitFiles("out", processorResult.types);
+    var emitResults = emitter(outDir, processorResult.types);
     errors = emitResults.errors;
 }
 
