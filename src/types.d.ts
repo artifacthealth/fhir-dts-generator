@@ -129,13 +129,6 @@ interface EmitResults {
     errors: string[];
 }
 
-interface Writer {
-
-    writeBeginResource();
-    writeImport(name: string, value: string): void;
-    writeBeginInterface(name: string, extendsList: string[]): void;
-
-}
 
 interface Reference<T> {
     reference: string;

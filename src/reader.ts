@@ -5,6 +5,7 @@
 import fs = require("fs");
 import glob = require("glob");
 import util = require("util");
+import path = require("path");
 
 export function readSpecification(basePath: string): CreateFileMapResults {
 
@@ -16,7 +17,7 @@ export function readSpecification(basePath: string): CreateFileMapResults {
     var currentFile: string;
 
     try {
-        var files = glob.sync(basePath + "**/*.json");
+        var files = glob.sync(path.join(basePath, "**/*.json"));
     }
     catch(err) {
         addError("Error reading directory '%s': %s.", basePath, err.message);

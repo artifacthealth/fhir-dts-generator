@@ -14,8 +14,11 @@ import emitter = require("./emitters/declartionEmitter");
 
 var errors: string[];
 
-var specDir = "/Users/meir/Downloads/fhir-spec-dstu2/";
-var outDir = "out";
+var rootPath = path.dirname(__filename);
+var specDir = path.resolve(rootPath, "../../specification/fhir-spec-0.5.0");
+var outDir = path.resolve(rootPath, "../../out");
+
+console.log("Loading specification in " + specDir);
 
 mkdirp.sync(outDir);
 

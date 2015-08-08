@@ -1,10 +1,26 @@
 module.exports = function(grunt) {
 
+    grunt.loadNpmTasks('grunt-if-missing');
+    
     require('load-grunt-tasks')(grunt);
 
     // Project configuration.
     grunt.initConfig({
         pkg: grunt.file.readJSON("package.json"),
+
+        'request-progress': {
+            'download-specification': {
+                options: {
+                    allowOverwrite: false,
+                    src: 'http://www.hl7.org/fhir/2015May/fhir-spec.zip',
+                    dst: 'specification/fhir-spec-0.5.0.zip'
+                }
+            }
+        },
+
+        unzip: {
+            'specification/fhir-spec-0.5.0/': 'specification/fhir-spec-0.5.0.zip'
+        },
 
         clean: {
             build: {
@@ -29,17 +45,6 @@ module.exports = function(grunt) {
             }
         },
 
-        ts_clean: {
-            build: {
-                options: {
-                    // set to true to print files
-                    verbose: false
-                },
-                src: ['build/src/**/*'],
-                dot: true
-            }
-        },
-
         copy: {
             build: {
                 files: [
@@ -55,22 +60,18 @@ module.exports = function(grunt) {
             }
         },
 
-        tsreflect: {
-            services: {
-                src: [
-                    "src/services/**/*.ts"
-                ],
-                dest: "build/src/services/"
-            },
-            domain: {
-                src: [
-                    "src/domain/**/*.ts"
-                ],
-                dest: "build/src/domain/"
+        execute: {
+            generate: {
+                src: [ 'build/src/main.js' ]
             }
         }
+
+
     });
 
     // Default task(s).
-    grunt.registerTask("default", [ "clean:build", "typescript:build", "copy:build" ]);
+    grunt.registerTask("default", [ "setup", "build", "generate" ]);
+    grunt.registerTask("setup", [ "request-progress:download-specification", "if-missing:unzip" ]);
+    grunt.registerTask("build", [ "clean:build", "typescript:build", "copy:build" ]);
+    grunt.registerTask("generate", [ "execute:generate" ]);
 };
