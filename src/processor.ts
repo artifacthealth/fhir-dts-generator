@@ -707,7 +707,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
 
         // Add resourceType to DomainResource if it's missing
-        if(type.name == "DomainResource" && !getProperty(type, "resourceType")) {
+        if(type.name == "Resource" && !getProperty(type, "resourceType")) {
             type.properties.unshift({
                 name: "resourceType",
                 description: "The type of the resource.",
