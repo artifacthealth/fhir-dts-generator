@@ -48,7 +48,7 @@ function reportErrors(errors: string[]): void {
 }
 
 function createDeclarationTests(specDir: string, outDir: string): void {
-    var examples = "",
+    var examples = "/// <reference path=\"./fhir.d.ts\" />\n\n",
         count = 1;
 
     glob.sync(path.join(specDir, "**/*example*.json")).forEach(filename => {

@@ -684,8 +684,8 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                         return;
                     }
 
-                    var lastProperty: Property,
-                        lastTypeReferenceName: string;
+                    var lastProperty: Property = null,
+                        lastTypeReferenceName: string = "";
 
                     for(var j = 0; j < typeReferences.length; j++) {
                         var typeReference = typeReferences[j];
@@ -728,6 +728,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 name: "resourceType",
                 description: "The type of the resource.",
                 type: createTypeReference("code"),
+                optional: true
+            });
+        }
+
+        // Add fhir_comments to Element if it's missing
+        if(type.name == "Element" && !getProperty(type, "fhir_comments")) {
+            type.properties.unshift({
+                name: "fhir_comments",
+                description: "Content that would be comments in an XML.",
+                type: createArrayType(createTypeReference("string")),
                 optional: true
             });
         }

@@ -106,6 +106,16 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
         }
     }
 
+    function getTypeByName(name: string): Type {
+
+        for(var i = 0; i < types.length; i++) {
+
+            var type = types[i];
+            if(type.name == name) {
+                return type;
+            }
+        }
+    }
 
     function addError(message: string, ...args: any[]) {
 
@@ -251,6 +261,37 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
 
         writer.writeLine();
         writer.writeLine();
+
+        // If we have a primitive type or array of primitive types for the property then we need to add a special
+        // property that allows for the representation of id and extensions.
+        var type: Type,
+            isArray = false;
+
+        if (property.type.kind == TypeKind.ArrayType) {
+            type = (<ArrayType>property.type).elementType;
+            isArray = true;
+        }
+        else {
+            type = property.type;
+        }
+
+        if(type.kind == TypeKind.TypeReference) {
+
+            type = getTypeByName(type.name);
+            if(type.kind == TypeKind.Primitive) {
+
+                // We have a primitive type for the property so we need to add the special property
+                emitComment("Contains " + property.name + "'s id, extensions, and comments.");
+                writer.write("_" + property.name);
+                writer.write("?: Element");
+                if(isArray) {
+                    writer.write("[]");
+                }
+                writer.write(";");
+                writer.writeLine();
+                writer.writeLine();
+            }
+        }
     }
 
     function emitObjectType(objectType: ObjectType): void {
