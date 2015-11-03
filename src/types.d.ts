@@ -69,6 +69,11 @@ interface UnionType extends Type {
     types: Type[];
 }
 
+interface AliasType extends Type {
+
+    type: Type;
+}
+
 declare const enum TypeKind {
 
     TypeReference = 1,
@@ -78,8 +83,9 @@ declare const enum TypeKind {
     ArrayType = 16,
     UnionType = 32,
     Primitive = 64,
+    AliasType = 128,
     ObjectTypes = InterfaceType | ObjectType,
-    RootTypes = Primitive | ObjectTypes | EnumType
+    RootTypes = Primitive | ObjectTypes | EnumType | AliasType
 }
 
 declare const enum TypeCategory {

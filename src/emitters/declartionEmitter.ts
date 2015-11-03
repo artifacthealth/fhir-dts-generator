@@ -30,9 +30,6 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     writer.writeLine();
     writer.increaseIndent();
 
-    console.log(types);
-
-
     types.forEach(type => {
 
         if(!(type.kind & TypeKind.RootTypes)) {
@@ -48,12 +45,66 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
         emitType(type);
     });
 
+    emitType(createResourceType());
+
     writer.decreaseIndent();
     writer.write("}");
     writer.writeLine();
 
     writer.close();
     return result;
+
+    function createResourceType(): Type {
+
+        var subTypes: Type[] = [];
+
+        findSubTypes(findResourceType());
+
+        var resourceType: AliasType = {
+            kind: TypeKind.AliasType,
+            description: "Reference to a sub-type of ResourceBase. This is needed for stricter object literal typing introduced in TypeScript 1.6.",
+            name: "Resource",
+            category: TypeCategory.DataType,
+            type: <UnionType> {
+                kind: TypeKind.UnionType,
+                category: TypeCategory.DataType,
+                types: subTypes
+            }
+        }
+
+        return resourceType;
+
+        function findSubTypes(baseType: Type): void {
+
+            for(var i = 0; i < types.length; i++) {
+                var type = types[i];
+
+                if(type.kind == TypeKind.InterfaceType && (<InterfaceType>type).baseType == baseType.name) {
+                    subTypes.push(createTypeReference(type.name));
+                    findSubTypes(type);
+                }
+            }
+
+        }
+
+        function findResourceType(): Type {
+
+            for(var i = 0; i < types.length; i++) {
+                var type = types[i];
+                if(type.name == "Resource") {
+                    return type;
+                }
+            }
+        }
+
+        function createTypeReference(name: string): TypeReference {
+            return {
+                category: TypeCategory.None,
+                name: name,
+                kind: TypeKind.TypeReference
+            }
+        }
+    }
 
 
     function addError(message: string, ...args: any[]) {
@@ -89,6 +140,9 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
             case TypeKind.Primitive:
                 emitPrimitivetype(<PrimitiveType>type);
                 break;
+            case TypeKind.AliasType:
+                emitAliasType(<AliasType>type);
+                break;
             default:
                 addError("Cannot emit unknown type %d", type.kind);
         }
@@ -109,17 +163,29 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
         writer.writeLine();
     }
 
+    function emitAliasType(aliasType: AliasType): void {
+
+        emitComment(aliasType.description);
+
+        writer.write("type ");
+        writer.write(aliasType.name);
+        writer.write(" = ");
+        emitType(aliasType.type);
+        writer.write(";");
+        writer.writeLine();
+    }
+
     function emitInterfaceType(interfaceType: InterfaceType): void {
 
         emitComment(interfaceType.description);
 
         writer.write("interface ");
-        writer.write(interfaceType.name);
+        writer.write(transformTypeName(interfaceType.name));
         writer.write(" ");
 
         if(interfaceType.baseType) {
             writer.write("extends ");
-            writer.write(interfaceType.baseType);
+            writer.write(transformTypeName(interfaceType.baseType));
             writer.write(" ");
         }
 
@@ -133,6 +199,14 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
         writer.decreaseIndent();
         writer.write("}");
         writer.writeLine();
+    }
+
+    function transformTypeName(text: string): string {
+
+        if(text == "Resource") {
+            return "ResourceBase";
+        }
+        return text;
     }
 
     function emitComment(text: string): void {

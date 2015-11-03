@@ -27,8 +27,13 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     for(var id in files) {
         var file = files[id];
 
-        if(isResourceDefinition(file) || isDataTypeDefinition(file)) {
-            referenceFile(file);
+        if(isResourceDefinition(file)) {
+            if(isConstrainedType(file)) {
+                console.log("Warning! Skipping constrained type resource definition: " + file.filename);
+            }
+            else {
+                referenceFile(file);
+            }
         }
     }
 
@@ -52,6 +57,11 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return false;
     }
 
+    function isConstrainedType(file: SpecificationFile): boolean {
+
+        return !!(<any>file.content).constrainedType;
+    }
+
     function isDataTypeDefinition(file: SpecificationFile): boolean {
         if(file.content.resourceType == "StructureDefinition") {
             // TODO: switch back to fhir.StructureDefinition
@@ -67,6 +77,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             file.referenced = true;
 
             if(file.id == "Money") debugger;
+
             processFile(file);
 
             if(file.type) {
@@ -122,9 +133,9 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
 
         // Pull in any codes that are defined in this value set
-        var defined = content.define;
-        if(defined) {
-            combine(processCodes(defined));
+        var codeSystem = content.codeSystem;
+        if(codeSystem) {
+            combine(processCodes(codeSystem));
         }
 
         // See if any codes are pulled in from elsewhere
@@ -321,16 +332,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return file;
     }
 
-    function processCodes(codes: fhir.ValueSetDefine): EnumMember[] {
+    function processCodes(codes: fhir.ValueSetCodeSystem | fhir.ValueSetComposeInclude): EnumMember[] {
 
         var system = codes.system;
-        var caseSensitive = codes.caseSensitive;
+        var caseSensitive = (<fhir.ValueSetCodeSystem>codes).caseSensitive;
         var members: EnumMember[] = [];
 
         processConcepts(codes.concept);
         return members;
 
-        function processConcepts(concepts: fhir.ValueSetDefineConcept[], parent?: EnumMember): void {
+        function processConcepts(concepts: fhir.ValueSetCodeSystemConcept[], parent?: EnumMember): void {
             if(concepts) {
                 for (var j = 0; j < concepts.length; j++) {
                     var concept = concepts[j];
@@ -405,7 +416,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getEnumMemberName(system: string, concept: fhir.ValueSetDefineConcept): string {
+    function getEnumMemberName(system: string, concept: fhir.ValueSetCodeSystemConcept): string {
 
         var name: string;
 
@@ -487,7 +498,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return charCode >= 48 && charCode <= 57;
     }
 
-    function getEnumMemberDescription(concept: fhir.ValueSetDefineConcept): string {
+    function getEnumMemberDescription(concept: fhir.ValueSetCodeSystemConcept): string {
 
         if(concept.definition ) return concept.definition;
 
@@ -544,12 +555,22 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processType(file: SpecificationFile): void {
 
-        if(isDataTypeDefinition(file)) {
+        if(isPrimitive(file)) {
             processPrimitive(file);
         }
         else {
             processTypeDefinition(file);
         }
+    }
+
+    function isPrimitive(file: SpecificationFile): boolean {
+
+        var elements = (<fhir.StructureDefinition>file.content).differential.element;
+        for (var i = 0; i < elements.length; i++) {
+            var element = elements[i];
+            if(element.short && element.short.indexOf("Primitive") != -1) return true;
+        }
+        return false;
     }
 
     function processPrimitive(file: SpecificationFile): void {
@@ -566,60 +587,51 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 // element that has resource details
                 description = element.definition;
             }
-            else {
-                if(getPropertyName(element) == "value") {
-                    var typeCode = element.type && element.type[0] && element.type[0].code
-                    if(!typeCode) {
-                        addError("Missing primitive type code for '%s'.", content.id);
-                    }
-                    else {
-                        var intrinsicType = getIntrinsicType(typeCode);
-                        if(!intrinsicType) {
-                            addError("Unrecognized primitive type code '%s' for '%s'.", typeCode, content.id);
-                        }
-                        else {
-                            intrinsicType = intrinsicType;
-                        }
-                    }
-                }
-            }
         }
 
+        var intrinsicType = getIntrinsicType(content.id);
         if(!intrinsicType) {
-            addError("Missing 'value' property for '%s'.", content.id);
+            addError("Unknown primitive type '%s'.", content.id);
         }
-        else {
-            var type = file.type = createPrimitiveType(content.id, intrinsicType);
-            type.description = description;
-        }
+
+        var type = file.type = createPrimitiveType(content.id, intrinsicType);
+        type.description = description;
     }
 
-    function getIntrinsicType(typeCode: string): string {
+    function getIntrinsicType(primitiveType: string): string {
 
-        switch (typeCode) {
-            case "xs:string":
+        switch (primitiveType) {
+            case "instant":
                 return "string";
-            case "xs:anyURI":
+            case "time":
                 return "string";
-            case "xs:int":
+            case "date":
+                return "string";
+            case "dateTime":
+                return "string";
+            case "decimal":
                 return "number";
-            case "xs:decimal":
-                return "number";
-            case "xs:xs:gYear, xs:gYearMonth, xs:date, xs:dateTime":
-                return "string";
-            case "xs:xs:gYear, xs:gYearMonth, xs:date":
-                return "string";
-            case "xs:dateTime":
-                return "string";
-            case "xs:xs:time":
-                return "string";
-            case "xs:boolean":
+            case "boolean":
                 return "boolean";
-            case "xs:base64Binary":
-                return "string";
-            case "xs:integer":
+            case "integer":
                 return "number";
-            case "xs:uri":
+            case "base64Binary":
+                return "string";
+            case "string":
+                return "string";
+            case "uri":
+                return "string";
+            case "unsignedInt":
+                return "number";
+            case "positiveInt":
+                return "number";
+            case "code":
+                return "string";
+            case "id":
+                return "string";
+            case "oid":
+                return "string";
+            case "markdown":
                 return "string";
         }
     }
@@ -696,13 +708,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                     }
                 }
                 else {
-                    var propertyType = getPropertyTypeForElement(type, element);
-                    if (!propertyType) {
-                        addError("Error getting type for property '%s'.", propertyName);
-                        return;
-                    }
+                    // TODO: How to handle properties that are present to indicate that a property from the base type is not allowed. For example, see simplequantity.profile.json for property Quantity.comparator.
+                    if(element.max != "0") {
+                        var propertyType = getPropertyTypeForElement(type, element);
+                        if (!propertyType) {
+                            addError("Error getting type for property '%s'.", propertyName);
+                            return;
+                        }
 
-                    addProperty(propertyName, propertyType);
+                        addProperty(propertyName, propertyType);
+                    }
                 }
             }
         }
@@ -895,7 +910,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
             // check if we have a binding that is not an example binding
             if (element.binding && !isExampleBinding(element.binding)) {
-                var bindingReference = getBindingReference(element.binding);
+                var bindingReference = getBindingReference(element);
                 if (bindingReference) {
                     if (elementType.kind != TypeKind.TypeReference) {
                         addError("Expected type reference");
@@ -998,12 +1013,14 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             if (typeElement.profile && typeElement.profile.length) {
                 var resourceName = getResourceNameFromProfile(typeElement.profile[0]);
                 if(resourceName) {
-                    var resourceFile = files[resourceName];
-                    if(!resourceFile) {
-                        addError("Unknown profile '%s'.", resourceName);
-                    }
-                    else {
-                        referenceFile(resourceFile);
+                    if(resourceName != "any") {
+                        var resourceFile = files[resourceName];
+                        if (!resourceFile) {
+                            addError("Unknown profile '%s'.", resourceName);
+                        }
+                        else {
+                            referenceFile(resourceFile);
+                        }
                     }
 
                     typeReference.binding = resourceName;
@@ -1041,7 +1058,13 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return elementTypeFile;
     }
 
-    function getBindingReference(binding: fhir.ElementDefinitionBinding): string {
+    function getBindingReference(element: fhir.ElementDefinition): string {
+
+        var binding = element.binding;
+        if(!binding) {
+            addError(("Element missing binding reference '%s'.", element.name));
+            return null;
+        }
 
         var valueSetReference = binding.valueSetReference;
         if (valueSetReference && valueSetReference.reference) {
@@ -1058,7 +1081,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 // In-case the value set does not define a valid symbol name in the resource so get it from the
                 // binding the first time it's used.
                 if(!bindingTypeFile.symbol) {
-                    bindingTypeFile.symbol = binding.name;
+                    bindingTypeFile.symbol = changeCase.pascalCase(element.path);
                 }
 
                 // queue the binding reference for processing.
