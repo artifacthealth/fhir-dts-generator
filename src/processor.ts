@@ -124,13 +124,15 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         var content = <fhir.ValueSet>file.content;
 
-        var type: EnumType = file.type = {
+        var type: EnumType = {
             category: TypeCategory.ValueSet,
             name: getEnumName(file),
             kind: TypeKind.EnumType,
             description: content.description,
             members: []
         }
+
+        file.type = type;
 
         // Pull in any codes that are defined in this value set
         var codeSystem = content.codeSystem;

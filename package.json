@@ -15,7 +15,7 @@
     "grunt-curl": "^2.2.0",
     "grunt-execute": "^0.2.2",
     "grunt-request-progress": "0.0.3",
-    "grunt-typescript": "^0.6.2",
+    "grunt-typescript": "^0.8.0",
     "grunt-zip": "^0.17.0",
     "load-grunt-tasks": "^3.1.0",
     "typescript": "^1.6.2"

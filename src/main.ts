@@ -11,7 +11,6 @@ import reader = require("./reader");
 import processor = require("./processor");
 import emitter = require("./emitters/declartionEmitter");
 
-
 var errors: string[];
 
 var rootPath = path.dirname(__filename);
