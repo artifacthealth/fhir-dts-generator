@@ -17,9 +17,9 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     var writer = new Writer(path.join(outDir, "fhir.d.ts"));
 
     // Write the header
-    writer.write("// Type definitions for FHIR DSTU2 v0.5.0");
+    writer.write("// Type definitions for FHIR DSTU2 v1.0.0");
     writer.writeLine();
-    writer.write("// Project: http://www.hl7.org/fhir/2015May/index.html");
+    writer.write("// Project: http://www.hl7.org/fhir/2015Sep/index.html");
     writer.writeLine();
     writer.write("// Definitions by: Artifact Health <www.artifacthealth.com>");
     writer.writeLine();
@@ -29,6 +29,8 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     writer.write("declare module fhir {");
     writer.writeLine();
     writer.increaseIndent();
+
+    console.log(types);
 
 
     types.forEach(type => {

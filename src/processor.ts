@@ -27,7 +27,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     for(var id in files) {
         var file = files[id];
 
-        if(isResourceDefinition(file)) {
+        if(isResourceDefinition(file) || isDataTypeDefinition(file)) {
             referenceFile(file);
         }
     }
@@ -46,7 +46,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function isResourceDefinition(file: SpecificationFile): boolean {
         if(file.content.resourceType == "StructureDefinition") {
-            return (<fhir.StructureDefinition>file.content).type == "resource";
+            // TODO: switch back to fhir.StructureDefinition
+            return (<any>file.content).kind == "resource";
+        }
+        return false;
+    }
+
+    function isDataTypeDefinition(file: SpecificationFile): boolean {
+        if(file.content.resourceType == "StructureDefinition") {
+            // TODO: switch back to fhir.StructureDefinition
+            return (<any>file.content).kind == "datatype";
         }
         return false;
     }
@@ -286,7 +295,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         var file = getValueSetFile(url);
         if(!file) {
-            addError("Unable to process import statement for '%s' because value set with id '%s' could not be found.", file.filename, url);
+            addError("Unable to process import statement for '%s' because value set with id '%s' could not be found.", url, url);
         }
         else {
             processFile(file);
@@ -515,11 +524,13 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processStructureDefinition(file: SpecificationFile): void {
 
-        switch((<fhir.StructureDefinition>file.content).type) {
+        // TODO: return to fhir.StructureDefinition
+        switch((<any>file.content).kind) {
             case 'resource':
                 processResource(file);
                 break;
             case 'constraint':
+            case 'datatype':
             case 'type':
                 processType(file);
                 break;
@@ -533,22 +544,12 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function processType(file: SpecificationFile): void {
 
-        if(isPrimitive(file)) {
+        if(isDataTypeDefinition(file)) {
             processPrimitive(file);
         }
         else {
             processTypeDefinition(file);
         }
-    }
-
-    function isPrimitive(file: SpecificationFile): boolean {
-
-        var elements = (<fhir.StructureDefinition>file.content).differential.element;
-        for (var i = 0; i < elements.length; i++) {
-            var element = elements[i];
-            if(element.short.indexOf("Primitive") != -1) return true;
-        }
-        return false;
     }
 
     function processPrimitive(file: SpecificationFile): void {
@@ -994,8 +995,8 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
             var typeReference = createTypeReference(typeName);
 
-            if (typeElement.profile) {
-                var resourceName = getResourceNameFromProfile(typeElement.profile);
+            if (typeElement.profile && typeElement.profile.length) {
+                var resourceName = getResourceNameFromProfile(typeElement.profile[0]);
                 if(resourceName) {
                     var resourceFile = files[resourceName];
                     if(!resourceFile) {
@@ -1020,7 +1021,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         var base = "http://hl7.org/fhir/StructureDefinition/";
 
         if(profile.indexOf(base) == -1) {
-            addError("Unrecognized profile uri");
+            addError("Unrecognized profile uri: '" + profile + "'.");
             return null;
         }
 

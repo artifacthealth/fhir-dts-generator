@@ -12,14 +12,14 @@ module.exports = function(grunt) {
             'download-specification': {
                 options: {
                     allowOverwrite: false,
-                    src: 'http://www.hl7.org/fhir/2015May/fhir-spec.zip',
-                    dst: 'specification/fhir-spec-0.5.0.zip'
+                    src: 'http://www.hl7.org/fhir/DSTU2/fhir-spec.zip',
+                    dst: 'specification/fhir-spec-1.0.0.zip'
                 }
             }
         },
 
         unzip: {
-            'specification/fhir-spec-0.5.0/': 'specification/fhir-spec-0.5.0.zip'
+            'specification/fhir-spec-1.0.0/': 'specification/fhir-spec-1.0.0.zip'
         },
 
         clean: {
