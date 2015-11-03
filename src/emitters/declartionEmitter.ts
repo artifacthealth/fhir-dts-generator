@@ -281,7 +281,7 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
             if(type.kind == TypeKind.Primitive) {
 
                 // We have a primitive type for the property so we need to add the special property
-                emitComment("Contains " + property.name + "'s id, extensions, and comments.");
+                emitComment("Contains extended information for property '" + property.name + "'.");
                 writer.write("_" + property.name);
                 writer.write("?: Element");
                 if(isArray) {
