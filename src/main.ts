@@ -14,7 +14,7 @@ import emitter = require("./emitters/declartionEmitter");
 var errors: string[];
 
 var rootPath = path.dirname(__filename);
-var specDir = path.resolve(rootPath, "../../specification/fhir-spec-1.0.0");
+var specDir = path.resolve(rootPath, "../../specification/fhir-spec");
 var outDir = path.resolve(rootPath, "../../out");
 
 console.log("Loading specification in " + specDir);
