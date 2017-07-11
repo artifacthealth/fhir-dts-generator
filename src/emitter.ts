@@ -4,7 +4,7 @@
 import util = require("util");
 import Writer = require("./writer");
 
-// TOOD: Better way to handle declaration output: Do not emit enums, do not emit type arguments, combine types in union that differ only be binding.
+// TOOD: Better way to handle declaration output: Do not emit enums, do not emit type arguments, combine types in union that differ only by binding.
 
 var emitTypeArguments = false;
 var emitValueSets = false;

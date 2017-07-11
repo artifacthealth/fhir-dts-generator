@@ -59,7 +59,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function isConstrainedType(file: SpecificationFile): boolean {
 
-        return !!(<any>file.content).constrainedType;
+        return (<any>file.content).derivation == "constraint";
     }
 
     function isDataTypeDefinition(file: SpecificationFile): boolean {
@@ -75,8 +75,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         // flag file as referenced
         if(!file.referenced) {
             file.referenced = true;
-
-            if(file.id == "Money") debugger;
 
             processFile(file);
 
@@ -114,6 +112,9 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             case 'StructureDefinition':
                 processStructureDefinition(file);
                 break;
+            default:
+                addError("Unknown resource type '%s'.", file.content.resourceType);
+                break;
         }
 
         file.processed = true;
@@ -134,12 +135,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         file.type = type;
 
-        // Pull in any codes that are defined in this value set
-        var codeSystem = content.codeSystem;
-        if(codeSystem) {
-            combine(processCodes(codeSystem));
-        }
-
         // See if any codes are pulled in from elsewhere
         var compose = content.compose;
         if(compose) {
@@ -148,11 +143,29 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             if(includes) {
                 includes.forEach(item => combine(processInclude(item)));
             }
+        }
 
-            // See if we import from another value set
-            var imports = compose.import;
-            if(imports) {
-                imports.forEach(item => combine(processImport(item)));
+        function processInclude(include: fhir.ValueSetComposeInclude): EnumMember[] {
+
+            if(include.system) {
+
+                // process any included codes substituting for original system if available
+                var members = substituteCodesFromOriginalSystem(include.system, processCodes(include));
+
+                // process any filters
+                if (include.filter) {
+                    include.filter.forEach(filter => processFilter(include.system, filter, members));
+                }
+
+                return members;
+            }
+
+            if (include.valueSet) {
+                // See if we import from another value set
+                var imports = include.valueSet;
+                if (imports) {
+                    imports.forEach(item => combine(processImport(item)));
+                }
             }
         }
 
@@ -234,24 +247,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             && member1.caseSensitive === member2.caseSensitive;
     }
 
-    function processInclude(include: fhir.ValueSetComposeInclude): EnumMember[] {
-
-        if(!include.system) {
-            addError("Include statement missing system");
-            return null;
-        }
-
-        // process any included codes substituting for original system if available
-        var members = substituteCodesFromOriginalSystem(include.system, processCodes(include));
-
-        // process any filters
-        if(include.filter) {
-            include.filter.forEach(filter => processFilter(include.system, filter, members));
-        }
-
-        return members;
-    }
-
     function substituteCodesFromOriginalSystem(url: string, members: EnumMember[]): EnumMember[] {
 
         var file = getValueSetFile(url);
@@ -322,6 +317,11 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
     function getValueSetFile(url: string): SpecificationFile {
 
+        // handle bad reference in devicerequest.profile.json
+        if (url == "http://build.fhir.org/valueset-request-intent.html") {
+            url = "http://hl7.org/fhir/ValueSet/request-intent";
+        }
+
         var file = files[url];
         if(!file) {
             // there are some inconsistencies in the url naming so if we can't find the file, try adding in 'vs' and
@@ -334,16 +334,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return file;
     }
 
-    function processCodes(codes: fhir.ValueSetCodeSystem | fhir.ValueSetComposeInclude): EnumMember[] {
+    function processCodes(codes: fhir.ValueSetComposeInclude): EnumMember[] {
 
         var system = codes.system;
-        var caseSensitive = (<fhir.ValueSetCodeSystem>codes).caseSensitive;
+        var caseSensitive = true;
         var members: EnumMember[] = [];
 
         processConcepts(codes.concept);
         return members;
 
-        function processConcepts(concepts: fhir.ValueSetCodeSystemConcept[], parent?: EnumMember): void {
+        function processConcepts(concepts: fhir.ValueSetComposeIncludeConcept[], parent?: EnumMember): void {
             if(concepts) {
                 for (var j = 0; j < concepts.length; j++) {
                     var concept = concepts[j];
@@ -363,9 +363,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                     }
 
                     members.push(member);
-
-                    // see if we have child codes
-                    processConcepts(concept.concept, member);
                 }
             }
         }
@@ -418,7 +415,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         }
     }
 
-    function getEnumMemberName(system: string, concept: fhir.ValueSetCodeSystemConcept): string {
+    function getEnumMemberName(system: string, concept: fhir.ValueSetComposeIncludeConcept): string {
 
         var name: string;
 
@@ -500,7 +497,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return charCode >= 48 && charCode <= 57;
     }
 
-    function getEnumMemberDescription(concept: fhir.ValueSetCodeSystemConcept): string {
+    function getEnumMemberDescription(concept: fhir.CodeSystemConcept): string {
 
         if(concept.definition ) return concept.definition;
 
@@ -538,14 +535,20 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     function processStructureDefinition(file: SpecificationFile): void {
 
         // TODO: return to fhir.StructureDefinition
-        switch((<any>file.content).kind) {
+        var kind = (<any>file.content).kind;
+        switch(kind) {
             case 'resource':
                 processResource(file);
                 break;
             case 'constraint':
             case 'datatype':
             case 'type':
+            case 'complex-type':
+            case 'primitive-type':
                 processType(file);
+                break;
+            default:
+                addError("Unknown content kind '%s'.", kind);
                 break;
         }
     }
@@ -643,6 +646,20 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         var content = <fhir.StructureDefinition>file.content;
         var type = file.type = createInterfaceType(content.id, isResourceDefinition(file) ? TypeCategory.Resource : TypeCategory.DataType);
 
+        if(typeof content.baseDefinition === "string") {
+            type.baseType = getResourceNameFromProfile(content.baseDefinition);
+
+            if (type.baseType) {
+                // Make sure we know the base type
+                var baseTypeFile = files[type.baseType];
+                if (!baseTypeFile) {
+                    addError("Unknown base type '%s'.", type.baseType);
+                    return;
+                }
+                referenceFile(baseTypeFile);
+            }
+        }
+
         var elements = content.differential.element;
         for(var i = 0; i < elements.length; i++) {
             var element = elements[i];
@@ -650,24 +667,10 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             if(element.path.indexOf(".") == -1) {
                 // element that has resource details
                 type.description = element.short;
-
-                if(type.name != "Element") {
-                    type.baseType = getElementTypeName(element);
-
-                    if (type.baseType) {
-                        // Make sure we know the base type
-                        var baseTypeFile = files[type.baseType];
-                        if (!baseTypeFile) {
-                            addError("Unknown base type '%s'.", type.baseType);
-                            return;
-                        }
-                        referenceFile(baseTypeFile);
-                    }
-                }
             }
             else {
                 // element has property details
-                var propertyName = getPropertyName(element);
+                var propertyName = getPropertyName(element.path);
                 if(!propertyName) {
                     addError("Missing property name for element %d.", i);
                     return;
@@ -777,9 +780,8 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return element.type[0].code;
     }
 
-    function getPropertyName(element: fhir.ElementDefinition): string {
+    function getPropertyName(path: string): string {
 
-        var path = element.path;
         if(path) {
             var parts = path.split(".");
             return parts[parts.length-1];
@@ -893,15 +895,20 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         var elementType: Type;
 
-        if(element.nameReference) {
-            elementType = getReferencedType(findTypeOfFirstProperty(rootType, element.nameReference, []));
+        if(element.contentReference) {
+            // the content reference
+            if (element.contentReference[0] != "#") {
+                addError("Expected content reference '%s' to start with #.", element.contentReference);
+                return null;
+            }
+            elementType = getReferencedType(findTypeOfFirstProperty(rootType, getPropertyName(element.contentReference), []));
             if(!elementType) {
-                addError("Could not resolve name reference '%s'.", element.nameReference);
+                addError("Could not resolve content reference '%s'.", element.contentReference);
                 return null;
             }
 
             if(elementType.kind != TypeKind.InterfaceType) {
-                addError("Expected name reference to resolve to an interface type.");
+                addError("Expected content reference to resolve to an interface type.");
             }
 
             // create a reference to the interface type
@@ -910,11 +917,19 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         else {
             var typeReferences = getTypeReferences(element.type);
             if (!typeReferences || typeReferences.length == 0) {
-                // If no type is specified then create a reference to a sub-type
-                elementType = createSubType(element);
+                addError("Expected type for %s.", element.path);
             }
             else if (typeReferences.length == 1) {
-                elementType = typeReferences[0];
+                if (typeReferences[0].name == "Element") {
+                    elementType = createSubType(element, "Element");
+                }
+                else if (typeReferences[0].name == "BackboneElement") {
+                    // a type of BackboneElement indicates we should create a new sub-type
+                    elementType = createSubType(element, "BackboneElement");
+                }
+                else {
+                    elementType = typeReferences[0];
+                }
             }
             else {
                 elementType = createUnionType(typeReferences);
@@ -941,13 +956,13 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return elementType;
     }
 
-    function createSubType(element: fhir.ElementDefinition): TypeReference {
+    function createSubType(element: fhir.ElementDefinition, baseType: string): TypeReference {
 
         var subTypeName = changeCase.pascalCase(element.path);
         var subType = createInterfaceType(subTypeName, TypeCategory.SubType);
 
         subType.description = element.short;
-        subType.baseType = "Element"; // all sub-types derive from Element
+        subType.baseType = baseType; // all sub-types derive from BackboneElement
 
         addTypeToResults(subType);
 
@@ -1023,7 +1038,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             var typeReference = createTypeReference(typeName);
 
             if (typeElement.profile && typeElement.profile.length) {
-                var resourceName = getResourceNameFromProfile(typeElement.profile[0]);
+                var resourceName = getResourceNameFromProfile(typeElement.profile);
                 if(resourceName) {
                     if(resourceName != "any") {
                         var resourceFile = files[resourceName];
@@ -1074,7 +1089,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         var binding = element.binding;
         if(!binding) {
-            addError(("Element missing binding reference '%s'.", element.name));
+            addError(("Element missing binding reference '%s'.", element.path));
             return null;
         }
 

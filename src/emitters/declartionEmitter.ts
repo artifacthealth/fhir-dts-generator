@@ -17,9 +17,9 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     var writer = new Writer(path.join(outDir, "fhir.d.ts"));
 
     // Write the header
-    writer.write("// Type definitions for FHIR DSTU2 v1.0.0");
+    writer.write("// Type definitions for FHIR Release 3 (STU)");
     writer.writeLine();
-    writer.write("// Project: http://www.hl7.org/fhir/2015Sep/index.html");
+    writer.write("// Project: http://hl7.org/fhir/index.html");
     writer.writeLine();
     writer.write("// Definitions by: Artifact Health <www.artifacthealth.com>");
     writer.writeLine();

@@ -27,8 +27,8 @@ export function readSpecification(basePath: string): CreateFileMapResults {
         for (var i = 0; i < files.length; i++) {
             currentFile = files[i];
 
-            // skip canonical files
-            if (currentFile.indexOf(".canonical.json") != -1) {
+            // skip canonical files and diff files
+            if (currentFile.indexOf(".canonical.json") != -1 || currentFile.indexOf(".diff.json") != -1) {
                 continue;
             }
 
@@ -62,7 +62,7 @@ export function readSpecification(basePath: string): CreateFileMapResults {
         if(!content) return;
 
         // only process value sets and structure definitions
-        if(content.resourceType != "ValueSet" && content.resourceType != "StructureDefinition") {
+        if(content.resourceType != "ValueSet" && content.resourceType != "StructureDefinition" && content.resourceType != "CodeSystem") {
             return;
         }
 
