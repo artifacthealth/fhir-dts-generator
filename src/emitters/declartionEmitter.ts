@@ -21,7 +21,7 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     writer.writeLine();
     writer.write("// Project: http://hl7.org/fhir/index.html");
     writer.writeLine();
-    writer.write("// Definitions by: Artifact Health <www.artifacthealth.com>");
+    writer.write("// Definitions by: Artifact Health <https://www.artifacthealth.com>");
     writer.writeLine();
     writer.write("// Definitions: https://github.com/borisyankov/DefinitelyTyped");
     writer.writeLine();
