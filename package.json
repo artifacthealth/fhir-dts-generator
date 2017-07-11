@@ -1,12 +1,9 @@
 {
   "name": "fhir",
   "version": "1.0.0",
-  "description": "",
+  "description": "Generates TypeScript DTS from FHIR specification",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "author": "",
+  "author": "Meir Gottlieb",
   "license": "ISC",
   "devDependencies": {
     "grunt": "*",
