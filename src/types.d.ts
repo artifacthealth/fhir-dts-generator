@@ -95,7 +95,8 @@ declare const enum TypeCategory {
     DataType,
     Resource,
     SubType,
-    ValueSet
+    ValueSet,
+    CodeSystem
 }
 
 interface Property {

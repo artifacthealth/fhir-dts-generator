@@ -90,7 +90,7 @@ export function readSpecification(basePath: string): CreateFileMapResults {
     function getContentId(content: any): string {
         if(!content) return null;
 
-        if(content.resourceType == 'ValueSet') return content.url;
+        if(content.resourceType == 'ValueSet' || content.resourceType == 'CodeSystem') return content.url;
 
         return content.id;
     }

@@ -50,9 +50,9 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     }
 
     function isResourceDefinition(file: SpecificationFile): boolean {
+
         if(file.content.resourceType == "StructureDefinition") {
-            // TODO: switch back to fhir.StructureDefinition
-            return (<any>file.content).kind == "resource";
+            return (<fhir.StructureDefinition>file.content).kind == "resource";
         }
         return false;
     }
@@ -60,14 +60,6 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
     function isConstrainedType(file: SpecificationFile): boolean {
 
         return (<any>file.content).derivation == "constraint";
-    }
-
-    function isDataTypeDefinition(file: SpecificationFile): boolean {
-        if(file.content.resourceType == "StructureDefinition") {
-            // TODO: switch back to fhir.StructureDefinition
-            return (<any>file.content).kind == "datatype";
-        }
-        return false;
     }
 
     function referenceFile(file: SpecificationFile): void {
@@ -112,6 +104,9 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             case 'StructureDefinition':
                 processStructureDefinition(file);
                 break;
+            case 'CodeSystem':
+                processCodeSystem(file);
+                break;
             default:
                 addError("Unknown resource type '%s'.", file.content.resourceType);
                 break;
@@ -150,7 +145,7 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             if(include.system) {
 
                 // process any included codes substituting for original system if available
-                var members = substituteCodesFromOriginalSystem(include.system, processCodes(include));
+                var members = substituteCodesFromOriginalSystem(include.system, processValueSetComposeInclude(include));
 
                 // process any filters
                 if (include.filter) {
@@ -253,12 +248,19 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         if (file) {
             processFile(file);
 
-            members = (<EnumType>file.type).members.filter((member) => {
-                for(var i = 0; i < members.length; i++) {
-                    if(members[i].value == member.value) return true;
+            if (file.type) {
+                if (members.length == 0) {
+                    members = (<EnumType>file.type).members;
                 }
-                return false;
-            });
+                else {
+                    members = (<EnumType>file.type).members.filter((member) => {
+                        for (var i = 0; i < members.length; i++) {
+                            if (members[i].value == member.value) return true;
+                        }
+                        return false;
+                    });
+                }
+            }
         }
 
         return members;
@@ -281,12 +283,14 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         processFile(file);
 
-        (<EnumType>file.type).members.forEach(member => {
+        if (file.type) {
+            (<EnumType>file.type).members.forEach(member => {
 
-            if(enumMemberIsA(member, filter.value)) {
-                members.push(member);
-            }
-        });
+                if (enumMemberIsA(member, filter.value)) {
+                    members.push(member);
+                }
+            });
+        }
     }
 
     function enumMemberIsA(member: EnumMember, code: string): boolean {
@@ -334,38 +338,51 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
         return file;
     }
 
-    function processCodes(codes: fhir.ValueSetComposeInclude): EnumMember[] {
+    function processValueSetComposeInclude(include: fhir.ValueSetComposeInclude): EnumMember[] {
 
-        var system = codes.system;
-        var caseSensitive = true;
+        return processConcepts(include.concept, true, include.system);
+    }
+
+    function processCodeSystem(file: SpecificationFile): void {
+
+        var content = <fhir.CodeSystem>file.content;
+
+        file.type = <EnumType>{
+            category: TypeCategory.CodeSystem,
+            name: getEnumName(file),
+            kind: TypeKind.EnumType,
+            description: content.description,
+            members: processConcepts(content.concept, content.caseSensitive, content.url)
+        };
+    }
+
+    function processConcepts(concepts: (fhir.ValueSetComposeIncludeConcept | fhir.CodeSystemConcept)[], caseSensitive: boolean,
+                             system: string): EnumMember[] {
+
         var members: EnumMember[] = [];
 
-        processConcepts(codes.concept);
-        return members;
+        if(concepts) {
+            for (var j = 0; j < concepts.length; j++) {
+                var concept = concepts[j];
 
-        function processConcepts(concepts: fhir.ValueSetComposeIncludeConcept[], parent?: EnumMember): void {
-            if(concepts) {
-                for (var j = 0; j < concepts.length; j++) {
-                    var concept = concepts[j];
+                var member: EnumMember = {
+                    name: getEnumMemberName(system, concept),
+                    description: getEnumMemberDescription(concept),
+                    value: concept.code,
+                    system: system,
+                    caseSensitive: caseSensitive
+                };
 
-                    var member: EnumMember = {
-                        name: getEnumMemberName(system, concept),
-                        description: getEnumMemberDescription(concept),
-                        value: concept.code,
-                        system: system,
-                        caseSensitive: caseSensitive,
-                        parent: parent
-                    }
-
-                    var display = concept.display && concept.display.trim();
-                    if(display) {
-                        member.display = display;
-                    }
-
-                    members.push(member);
+                var display = concept.display && concept.display.trim();
+                if(display) {
+                    member.display = display;
                 }
+
+                members.push(member);
             }
         }
+
+        return members;
     }
 
     function getEnumName(file: SpecificationFile): string {
