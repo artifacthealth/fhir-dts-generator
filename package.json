@@ -1,9 +1,10 @@
 {
-  "name": "fhir",
+  "name": "fhir-dts-generator",
   "version": "1.0.0",
   "description": "Generates TypeScript DTS from FHIR specification",
   "main": "index.js",
   "author": "Meir Gottlieb",
+  "private": true,
   "license": "ISC",
   "devDependencies": {
     "grunt": "*",
