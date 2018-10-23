@@ -59,26 +59,35 @@ export function readSpecification(basePath: string): CreateFileMapResults {
 
     function processFile(filename: string, content: any): void {
 
-        if(!content) return;
+//        console.log("processFile " + filename + " - " + content);
+
+        if (!content) return;
 
         // only process value sets and structure definitions
         if(content.resourceType != "ValueSet" && content.resourceType != "StructureDefinition" && content.resourceType != "CodeSystem") {
+//            console.log("skipping because no vs, sd or cs "+filename)
             return;
         }
 
         // skip files that are of resource type StructureDefinition but do not contain '.profile' in their name
         if(content.resourceType == "StructureDefinition" && filename.indexOf(".profile") == -1) {
+  //          console.log("skipping because no vad and no .profile "+filename)
             return;
         }
 
         // skip files that do not define an id
         var id = getContentId(content);
-        if(!id) return;
+        if(!id) {
+  //          console.log("skipping beaus no id "+filename)
+            return;
+        }
 
         if(result.files[id]) {
             addError("Duplicate id '%s' already defined in file '%s'.", id, result.files[id].filename);
             return;
         }
+
+  //      console.log("addidng"+filename+" id "+id);
 
         result.files[id] = {
             id,

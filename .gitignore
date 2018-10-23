@@ -5,3 +5,5 @@
 /dump.rdb
 /specification
 /out
+bom-remove.sh
+package-lock.json

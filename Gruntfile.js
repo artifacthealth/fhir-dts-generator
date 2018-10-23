@@ -12,8 +12,9 @@ module.exports = function(grunt) {
             'download-specification': {
                 options: {
                     allowOverwrite: false,
-                    src: 'http://www.hl7.org/fhir/fhir-spec.zip',
-                    dst: 'specification/fhir-spec.zip'
+//                    src: 'http://www.hl7.org/fhir/fhir-spec.zip',
+                      src: 'http://hl7.org/fhir/2018Sep/fhir-spec.zip',
+                      dst: 'specification/fhir-spec.zip'
                 }
             }
         },
