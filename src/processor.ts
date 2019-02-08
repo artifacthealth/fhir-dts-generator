@@ -950,6 +950,10 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             }
 
             if (elementType.kind != TypeKind.InterfaceType) {
+                if (elementType.name == "string" && elementType.kind == TypeKind.Primitive) {
+                    var type = createTypeReference("string");
+                    return type;                            
+                }
                 addError("Expected content reference to resolve to an interface type.");
             }
 
