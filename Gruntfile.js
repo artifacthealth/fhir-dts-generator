@@ -6,21 +6,22 @@ module.exports = function(grunt) {
 
     // Project configuration.
     grunt.initConfig({
-        pkg: grunt.file.readJSON("package.json"),
+//        pkg: grunt.file.readJSON("package.json"),
 
-        'request-progress': {
-            'download-specification': {
-                options: {
-                    allowOverwrite: false,
-                    src: 'http://www.hl7.org/fhir/fhir-spec.zip',
-                    dst: 'specification/fhir-spec.zip'
-                }
-            }
-        },
+//        'request-progress': {
+//            'download-specification': {
+//                options: {
+//                    allowOverwrite: false,
+//                    src: 'http://www.hl7.org/fhir/fhir-spec.zip',
+//                      src: 'file:Users/oliveregger/Documents/docs/standards/hl7/fhir/fhir-spec-r4.zip',
+//                      dst: 'specification/fhir-spec.zip'
+//                }
+//            }
+//        },
 
-        unzip: {
-            'specification/fhir-spec/': 'specification/fhir-spec.zip'
-        },
+//        unzip: {
+//            'specification/fhir-spec/': 'specification/fhir-spec.zip'
+//        },
 
         clean: {
             build: {
@@ -70,8 +71,9 @@ module.exports = function(grunt) {
     });
 
     // Default task(s).
-    grunt.registerTask("default", [ "setup", "build", "generate" ]);
-    grunt.registerTask("setup", [ "request-progress:download-specification", "if-missing:unzip" ]);
+//    grunt.registerTask("default", [ "setup", "build", "generate" ]);
+    grunt.registerTask("default", [  "build", "generate" ]);
+//    grunt.registerTask("setup", [ "request-progress:download-specification", "if-missing:unzip" ]);
     grunt.registerTask("build", [ "clean:build", "typescript:build", "copy:build" ]);
     grunt.registerTask("generate", [ "execute:generate" ]);
 };

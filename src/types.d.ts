@@ -1,11 +1,70 @@
-/// <reference path="../typings/fhir.d.ts" />
-
 interface Callback {
     (err?: Error): void;
 }
 
 interface ResultCallback<T> {
     (err?: Error, result?: T): void;
+}
+
+interface ResourceBase {
+    /**
+     * The type of the resource.
+     */
+    resourceType?: string;
+    /**
+     * Contains extended information for property 'resourceType'.
+     */
+    _resourceType?: Element;
+    /**
+     * Logical id of this artifact
+     */
+    id?: string;
+    /**
+     * Contains extended information for property 'id'.
+     */
+    _id?: Element;
+    /**
+     * Metadata about the resource
+     */
+ //   meta?: Meta;
+    /**
+     * A set of rules under which this content was created
+     */
+//    implicitRules?: uri;
+    /**
+     * Contains extended information for property 'implicitRules'.
+     */
+ //   _implicitRules?: Element;
+    /**
+     * Language of the resource content
+     */
+ //   language?: code;
+    /**
+     * Contains extended information for property 'language'.
+     */
+ //   _language?: Element;
+}
+
+/**
+  * A resource with narrative, extensions, and contained resources
+  */
+interface DomainResource extends ResourceBase {
+    /**
+     * Text summary of the resource, for human interpretation
+     */
+//    text?: Narrative;
+    /**
+     * Contained, inline Resources
+     */
+//    contained?: Resource[];
+    /**
+     * Additional Content defined by implementations
+     */
+//    extension?: Extension[];
+    /**
+     * Extensions that cannot be ignored
+     */
+//    modifierExtension?: Extension[];
 }
 
 interface SpecificationFile {
@@ -17,7 +76,7 @@ interface SpecificationFile {
     referenced?: boolean;
 
     symbol?: string;
-    content?: fhir.DomainResource;
+    content?: DomainResource;
     type?: Type;
 }
 

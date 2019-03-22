@@ -17,16 +17,18 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     var writer = new Writer(path.join(outDir, "fhir.d.ts"));
 
     // Write the header
-    writer.write("// Type definitions for FHIR Release 3 (STU)");
+    writer.write("// Type definitions for FHIR Release 4 (3.5.0 ballot)");
     writer.writeLine();
     writer.write("// Project: http://hl7.org/fhir/index.html");
     writer.writeLine();
-    writer.write("// Definitions by: Artifact Health <https://www.artifacthealth.com>");
+    writer.write("// Definitions by FHIR STU Release 3: Artifact Health <https://www.artifacthealth.com>");
     writer.writeLine();
     writer.write("// Definitions: https://github.com/borisyankov/DefinitelyTyped");
     writer.writeLine();
+    writer.write("// Definitions adapted for R4 by Oliver/Ahdis");
     writer.writeLine();
-    writer.write("declare module fhir {");
+    writer.writeLine();
+    writer.write("declare module fhir.r4 {");
     writer.writeLine();
     writer.increaseIndent();
 
