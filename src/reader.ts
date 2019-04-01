@@ -50,7 +50,12 @@ export function readSpecification(basePath: string): CreateFileMapResults {
     function readFile(filename: string): string {
 
         try {
-            return JSON.parse(fs.readFileSync(filename, 'utf8'));
+            let data = fs.readFileSync(filename, 'utf8');
+            if (data.charCodeAt(0) === 65279) {
+                data = data.replace(/\ufeff/g, '')
+            }
+
+            return JSON.parse(data);
         }
         catch(err) {
             addError(err.message);

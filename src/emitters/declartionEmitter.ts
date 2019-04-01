@@ -17,7 +17,7 @@ function emitFiles(outDir: string, types: Type[]): EmitResults {
     var writer = new Writer(path.join(outDir, "fhir.d.ts"));
 
     // Write the header
-    writer.write("// Type definitions for FHIR Release 3 (STU)");
+    writer.write("// Type definitions for FHIR Release 4");
     writer.writeLine();
     writer.write("// Project: http://hl7.org/fhir/index.html");
     writer.writeLine();

@@ -655,6 +655,12 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
                 return "string";
             case "markdown":
                 return "string";
+            case "canonical":
+                return "string";
+            case "url":
+                return "string";
+            case "uuid":
+                return "string";
         }
     }
 
@@ -912,6 +918,16 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
 
         var elementType: Type;
 
+        if (rootType.name == "Element" && element.id == "Element.id") {
+            var type = createTypeReference("string");
+            return type;
+        }
+
+        if (rootType.name == "Extension" && element.id == "Extension.url") {
+            var type = createTypeReference("url");
+            return type;
+        }
+
         if(element.contentReference) {
             // the content reference
             if (element.contentReference[0] != "#") {
@@ -925,6 +941,12 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             }
 
             if(elementType.kind != TypeKind.InterfaceType) {
+
+                if (elementType.name == "string" && elementType.kind == TypeKind.Primitive) {
+                    var type = createTypeReference("string");
+                    return type;
+                }
+
                 addError("Expected content reference to resolve to an interface type.");
             }
 
@@ -1055,19 +1077,24 @@ export function processFiles(files: SpecificationFileMap): ProcessFilesResults {
             var typeReference = createTypeReference(typeName);
 
             if (typeElement.profile && typeElement.profile.length) {
-                var resourceName = getResourceNameFromProfile(typeElement.profile);
-                if(resourceName) {
-                    if(resourceName != "any") {
-                        var resourceFile = files[resourceName];
-                        if (!resourceFile) {
-                            addError("Unknown profile '%s'.", resourceName);
-                        }
-                        else {
-                            referenceFile(resourceFile);
-                        }
-                    }
 
-                    typeReference.binding = resourceName;
+                if (typeElement.profile.length == 1) {
+                    var resourceName = getResourceNameFromProfile(typeElement.profile[0]);
+                    if (resourceName) {
+                        if (resourceName != "any") {
+                            var resourceFile = files[resourceName];
+                            if (!resourceFile) {
+                                addError("Unknown profile '%s'.", resourceName);
+                            }
+                            else {
+                                referenceFile(resourceFile);
+                            }
+                        }
+                        typeReference.binding = resourceName;
+                    }
+                } else {
+                    addError("Multiple typeElement profiles.");
+                    return null;
                 }
             }
 

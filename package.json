@@ -22,6 +22,7 @@
     "async": "^1.2.1",
     "change-case": "^2.3.0",
     "glob": "^5.0.10",
+    "grunt-if-missing": "^1.0.1",
     "mkdirp": "^0.5.1"
   }
 }

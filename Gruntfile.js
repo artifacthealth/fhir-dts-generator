@@ -1,7 +1,7 @@
 module.exports = function(grunt) {
 
     grunt.loadNpmTasks('grunt-if-missing');
-    
+
     require('load-grunt-tasks')(grunt);
 
     // Project configuration.
@@ -12,7 +12,7 @@ module.exports = function(grunt) {
             'download-specification': {
                 options: {
                     allowOverwrite: false,
-                    src: 'http://www.hl7.org/fhir/fhir-spec.zip',
+                    src: 'http://www.hl7.org/fhir/R4/fhir-spec-r4.zip',
                     dst: 'specification/fhir-spec.zip'
                 }
             }

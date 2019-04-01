@@ -1,18 +1,18 @@
 ### Description
-This project generates TypeScript DTS as well as a tests from the FHIR Release 3 STU Specification. 
+This project generates TypeScript DTS as well as a tests from the FHIR Release 4 Specification.
 
 ### Installation
-1. Install node packages 
+1. Install node packages
 ```sh
 $ npm install
 ```
 
-2. Install Grunt globally 
+2. Install Grunt globally
 ```sh
 $ npm install -g grunt
 ```
 
-3. Run grunt from the project directory. 
+3. Run grunt from the project directory.
 ```sh
 $ grunt
 ```

@@ -51,7 +51,12 @@ function createDeclarationTests(specDir: string, outDir: string): void {
         count = 1;
 
     glob.sync(path.join(specDir, "**/*example*.json")).forEach(filename => {
-        var example = JSON.parse(fs.readFileSync(filename, 'utf8'));
+        let data = fs.readFileSync(filename, 'utf8');
+        if (data.charCodeAt(0) === 65279) {
+            data = data.replace(/\ufeff/g, '');
+        }
+        var example = JSON.parse(data);
+        if (!example.resourceType) return;
         examples += "var example" + (count++) + ": fhir." + example.resourceType + " = " + JSON.stringify(example, null, "    ") + ";\n\n";
     });
 
